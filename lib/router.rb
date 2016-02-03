@@ -3,7 +3,7 @@ class Route
 
   def initialize(pattern, http_method, controller_class, action_name)
     @pattern = pattern
-    @http_method = http_method.upcase.to_s
+    @http_method = http_method.to_s.upcase
     @controller_class = controller_class
     @action_name = action_name
   end
@@ -17,6 +17,10 @@ class Route
   # use pattern to pull out route params (save for later?)
   # instantiate controller and call controller action
   def run(req, res)
+    debugger
+    matched_params = @pattern.
+    controller_instance = ControllerBase.new(req, res)
+    controller_instance.invoke_action(@action_name)
   end
 end
 
@@ -53,5 +57,12 @@ class Router
 
   # either throw 404 or call run on a matched route
   def run(req, res)
+    matched_request = match(req)
+    if matched_request
+      matched_request.run(req, res)
+    else
+      res.status = 404
+      res.write("The request was not found.")
+    end
   end
 end
