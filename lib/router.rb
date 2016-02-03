@@ -3,7 +3,7 @@ class Route
 
   def initialize(pattern, http_method, controller_class, action_name)
     @pattern = pattern
-    @http_method = http_method.to_s.upcase
+    @http_method = http_method
     @controller_class = controller_class
     @action_name = action_name
   end
@@ -11,16 +11,21 @@ class Route
   # checks if pattern matches path and method matches request method
   def matches?(req)
     # debugger
-    @http_method == req.request_method && @pattern =~ req.path
+    (@http_method == req.request_method.downcase.to_sym) && !!(@pattern =~ req.path)
   end
 
   # use pattern to pull out route params (save for later?)
   # instantiate controller and call controller action
   def run(req, res)
-    debugger
-    matched_params = @pattern.
-    controller_instance = ControllerBase.new(req, res)
-    controller_instance.invoke_action(@action_name)
+    # debugger
+    matched_params = @pattern.match(req.path)
+    # .match creates a MatchData object with the original string and the parsed names
+    # the hash function takes the names and associcates them with the captures in a hash
+    route_params = Hash[matched_params.names.zip(matched_params.captures)]
+    # debugger
+    controller_instance =  @controller_class.new(req, res, route_params)
+    # debugger
+    controller_instance.invoke_action(action_name)
   end
 end
 
@@ -40,19 +45,20 @@ class Router
   # evaluate the proc in the context of the instance
   # for syntactic sugar :)
   def draw(&proc)
+    self.instance_eval(&proc)
   end
 
   # make each of these methods that
   # when called add route
   [:get, :post, :put, :delete].each do |http_method|
     define_method(http_method) do |pattern, controller_class, action_name|
-      add_route(pattern, '#{http_method}', controller_class, action_name)
+      add_route(pattern, http_method, controller_class, action_name)
     end
   end
 
   # should return the route that matches this request
   def match(req)
-    @routes.select {|route| route.matches?(req)}
+    @routes.find {|route| route.matches?(req)} #use find, select creates an array
   end
 
   # either throw 404 or call run on a matched route
