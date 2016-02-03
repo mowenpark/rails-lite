@@ -3,14 +3,15 @@ class Route
 
   def initialize(pattern, http_method, controller_class, action_name)
     @pattern = pattern
-    @http_method = http_method
+    @http_method = http_method.upcase.to_s
     @controller_class = controller_class
     @action_name = action_name
   end
 
   # checks if pattern matches path and method matches request method
   def matches?(req)
-    @pattern =~ req.to_s
+    # debugger
+    @http_method == req.request_method && @pattern =~ req.path
   end
 
   # use pattern to pull out route params (save for later?)
@@ -40,11 +41,14 @@ class Router
   # make each of these methods that
   # when called add route
   [:get, :post, :put, :delete].each do |http_method|
-    define_method(http_method) do
+    define_method(http_method) do |pattern, controller_class, action_name|
+      add_route(pattern, '#{http_method}', controller_class, action_name)
+    end
   end
 
   # should return the route that matches this request
   def match(req)
+    @routes.select {|route| route.matches?(req)}
   end
 
   # either throw 404 or call run on a matched route
